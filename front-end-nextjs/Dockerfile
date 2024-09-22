@@ -3,11 +3,14 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install
 
 COPY . .
-RUN yarn build
+
+RUN npm run build
 
 # Stage 2: Serve the app with a lightweight image
 FROM node:18-alpine AS runner
@@ -22,4 +25,4 @@ ENV NODE_ENV production
 
 EXPOSE 3000
 
-CMD ["yarn", "start"]
+CMD ["npm", "start"]
