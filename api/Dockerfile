@@ -11,9 +11,6 @@ COPY . .
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Set environment variables for Azure Blob Storage
-ENV AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
-
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
 
