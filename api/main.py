@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import qrcode
-import boto3
+from azure.storage.blob import BlobServiceClient
 import os
 from io import BytesIO
 
-# Loading Environment variable (AWS Access Key and Secret Key)
+# Load environment variables (Azure Connection String and Container Name)
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,13 +23,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# AWS S3 Configuration
-s3 = boto3.client(
-    's3',
-    aws_access_key_id= os.getenv("AWS_ACCESS_KEY"),
-    aws_secret_access_key= os.getenv("AWS_SECRET_KEY"))
+# Azure Blob Storage Configuration
+azure_connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+container_name = os.getenv("AZURE_CONTAINER_NAME")
 
-bucket_name = 'YOUR_BUCKET_NAME' # Add your bucket name here
+# Create the BlobServiceClient object
+blob_service_client = BlobServiceClient.from_connection_string(azure_connection_string)
+container_client = blob_service_client.get_container_client(container_name)
 
 @app.post("/generate-qr/")
 async def generate_qr(url: str):
@@ -50,16 +50,17 @@ async def generate_qr(url: str):
     img.save(img_byte_arr, format='PNG')
     img_byte_arr.seek(0)
 
-    # Generate file name for S3
+    # Generate file name for Azure Blob Storage
     file_name = f"qr_codes/{url.split('//')[-1]}.png"
 
     try:
-        # Upload to S3
-        s3.put_object(Bucket=bucket_name, Key=file_name, Body=img_byte_arr, ContentType='image/png', ACL='public-read')
+        # Upload to Azure Blob Storage
+        blob_client = container_client.get_blob_client(file_name)
+        blob_client.upload_blob(img_byte_arr, blob_type="BlockBlob", content_type='image/png', overwrite=True)
+
+        # Generate the URL to access the blob
+        azure_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container_name}/{file_name}"
         
-        # Generate the S3 URL
-        s3_url = f"https://{bucket_name}.s3.amazonaws.com/{file_name}"
-        return {"qr_code_url": s3_url}
+        return {"qr_code_url": azure_url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
