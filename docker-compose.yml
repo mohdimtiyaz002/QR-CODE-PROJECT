@@ -1,26 +1,25 @@
 version: '3'
 services:
   frontend:
-    build: .
+    build: ./front-end-nextjs
     container_name: frontend
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://backend:8000
     depends_on:
       - backend
     networks:
       - app-network
 
   backend:
-    build: ./backend
+    build: ./api
     container_name: backend
     ports:
-      - "8000:8000"
-    env_file:
-      - ./backend/.env
+      - "8000:8000"  # The backend service should listen on port 8000
+    environment:
+      - AZURE_CONNECTION_STRING=${AZURE_CONNECTION_STRING}  # Make sure this is set in your environment or .env file
     networks:
       - app-network
+    restart: always  # Ensures the container restarts on failure
 
 networks:
   app-network:
