@@ -15,8 +15,8 @@ services:
     container_name: backend
     ports:
       - "8000:8000"  # The backend service should listen on port 8000
-    environment:
-      - AZURE_CONNECTION_STRING=${AZURE_CONNECTION_STRING}  # Make sure this is set in your environment or .env file
+    env_file:
+      - ./api/.env.example
     networks:
       - app-network
     restart: always  # Ensures the container restarts on failure
